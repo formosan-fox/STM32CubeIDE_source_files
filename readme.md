@@ -13,10 +13,8 @@
 * Auther: Zhi-Kai Xu
 * Email: zkxu.ii12@nycu.edu.tw
 * Sensor name: WSEN-PADS Absolute Pressure Sensor
-* Order code: 2511020213301
-* Datasheet: https://www.we-online.com/components/products/datasheet/2511020213301.pdf
 * User Manual: https://www.we-online.com/components/products/manual/2511020213301_WSEN-PADS%202511020213301%20Manual_rev2.2.pdf
-* Available interface: *I2C*
+* Available interface: **I2C**
 * TODO:
     - Single conversion mode
     - Enable low-noise configuration
@@ -29,10 +27,8 @@
 * Auther: Zhi-Kai Xu
 * Email: zkxu.ii12@nycu.edu.tw
 * Sensor name: WSEN-ITDS 3 Axis Acceleration Sensor
-* Order code: 2533020201601
-* Datasheet: https://www.we-online.com/components/products/datasheet/2533020201601.pdf
 * User Manual: https://www.we-online.com/components/products/manual/2533020201601_WSEN-ITDS%202533020201601%20Manual_rev2.3.pdf
-* Available interface: *I2C*
+* Available interface: **I2C**
 * TODO:
     - Single data conversion mode
     - Config filter path
@@ -45,11 +41,9 @@
 ## 6-axis IMU
 * Auther: Zhi-Kai Xu
 * Email: zkxu.ii12@nycu.edu.tw
-* Sensor name: Absolute Pressure Sensor WSEN-PADS
-* Order code: 2511020213301
-* Datasheet: https://www.we-online.com/components/products/datasheet/2511020213301.pdf
-* User Manual: https://www.we-online.com/components/products/manual/2511020213301_WSEN-PADS%202511020213301%20Manual_rev2.2.pdf
-* Available interface: *I2C* and *SPI*
+* Sensor name: WSEN-ISDS Inertial Measurement Unit
+* User Manual: https://www.we-online.com/components/products/manual/2536030320001_Manual_UM_WSEN-ISDS_2536030320001_rev1.1.pdf
+* Available interface: **I2C** and **SPI**
 * TODO:
     - Config filters of accelerator and gyroscope
     - FIFO
