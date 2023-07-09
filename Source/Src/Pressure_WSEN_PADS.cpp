@@ -1,32 +1,25 @@
 #include "Pressure_WSEN_PADS.h"
 #include "util.h"
 
+// TODO: map
+
 static const uint32_t I2C_TIMEOUT = 100;
+
+// ***** public funcitions *****
+
 
 Pressure_WSEN_PADS::Pressure_WSEN_PADS(I2C_HandleTypeDef* _i2c_handler, uint8_t SAO): i2c_handler(_i2c_handler)
 {
     i2c_device_addr = (SAO == 0) ? PADS_ADDRESS_I2C_0 : PADS_ADDRESS_I2C_1;
 }
 
-bool Pressure_WSEN_PADS::isCommunicationReady()
-{
-    uint8_t device_ID = 0;
-
-    getDeviceID(&device_ID);
-	if (device_ID == PADS_DEVICE_ID_VALUE) {
-		debug_print<uint8_t>("device ID = %x\r\n", device_ID);
-		debug_print("WSEN_PADS communicates successfully.\r\n");
-		return true;
-	} else {
-		debug_print<uint8_t>("device ID = %x\r\n", device_ID);
-		debug_print("WSEN_PADS Communicates failed.\r\n");
-		return false;
-	}
-}
-
-bool Pressure_WSEN_PADS::init()
+bool Pressure_WSEN_PADS::init(
+    PADS_outputDataRate_t outputDataRate,
+    PADS_state_t blockDataUpdate)
 {
 	PADS_state_t swReset;
+   	PADS_outputDataRate_t odr;
+
 
     // TODO: Initialize sensor interface.
 
@@ -41,30 +34,65 @@ bool Pressure_WSEN_PADS::init()
 		return false;
 	}
 
-    // Soft reset for setting the internal registers to the default values.
-	softReset();
-	do
-	{
-		getSoftResetState(&swReset);
-	} while (swReset);
-	debug_print("WSEN PADS: Soft reset completes.\r\n");
+    debug_print("WSEN PADS: Initializes.\r\n");
 
-    // TODO: reboot
+    // Soft reset for setting the internal registers to the default values. (example)
+    softReset();
+    do
+    {
+    	getSoftResetState(&swReset);
+    } while (swReset);
+    debug_print("WSEN PADS: Soft reset completes.\r\n");
 
 
-    // Automatic increment register address
+    // Automatic increment register address (default: enabled)
 	enableAutoIncrement();
 	if (isAutoIncrementEnabled()) {
 		debug_print("WSEN PADS: Auto increment is enabled.\r\n");
-	}
-
-    // Enable block data update
-    enableBlockDataUpdate();
-    if (isBlockDataUpdateEnabled()) {
-    	debug_print("WSEN PADS: Block data update is enabled.\r\n");
+	} else {
+        debug_print("<Error> WSEN PADS: Failed to enable auto increment.\r\n");
     }
 
+    // Enable block data update
+    if (blockDataUpdate) {
+        enableBlockDataUpdate();
+        if (isBlockDataUpdateEnabled()) {
+            debug_print("WSEN PADS: Block data update is enabled.\r\n");
+        } else {
+            debug_print("<Error> WSEN PADS: Failed to enable block data update.\r\n");
+        }
+    }
+
+    setOutputDataRate(outputDataRate);
+	getOutputDataRate(&odr);
+	if (odr == outputDataRate) {          
+		debug_print("WSEN PADS: Set output data\r\n");  // TODO: prine message
+    } else {
+        debug_print("<Error> WSEN PADS: Failed to set the output data rate.\r\n");
+    }
+	// TODO: Enable Low-noise configuration
+	// TODO: Enable additional low pass filter
+
     return true;
+}
+
+bool Pressure_WSEN_PADS::isCommunicationReady()
+{
+    uint8_t device_ID = 0;
+
+    getDeviceID(&device_ID);
+	if (device_ID == PADS_DEVICE_ID_VALUE) {
+		debug_print<uint8_t>("WSEN PADS: device ID = 0x%x. Communication is successful.\r\n", device_ID);
+		return true;
+	} else {
+		debug_print<uint8_t>("WSEN PADS: device ID = 0x%x. Communication is failed.\r\n", device_ID);
+		return false;
+	}
+}
+
+HAL_StatusTypeDef Pressure_WSEN_PADS::getDeviceID(uint8_t *device_ID)
+{
+    return PADS_ReadReg(PADS_DEVICE_ID_REG, 1, device_ID);
 }
 
 void Pressure_WSEN_PADS::singleConversionModeExample()
@@ -77,7 +105,6 @@ void Pressure_WSEN_PADS::singleConversionModeExample()
 
     float pressure = 0;
     float temperature = 0;
-    PADS_state_t presStatus;
     int n;
 
     debug_print("WSEN PADS: Run the single conversion mode example.\r\n");
@@ -86,34 +113,24 @@ void Pressure_WSEN_PADS::singleConversionModeExample()
         n = 0;
         enableOneShot();
         HAL_Delay(10);
-        enableOneShot();
-        HAL_Delay(10);
 
         if (isOneShotEnabled()) {
         	debug_print("WSEN PADS: One shot is enabled.\r\n");
         } else {
-        	debug_print("WSEN PADS: Error - One shot is not enabled.\r\n");
+        	debug_print("<Error> WSEN PADS: One shot is not enabled.\r\n");
         }
 
-
-//        do {
-//        	if (HAL_OK != isPressureDataReady(&presStatus)) {
-//        		debug_print("WSEN PADS: Error - Get pressure data status failed.\r\n");
-//        	}
-//        } while (presStatus != PADS_enable);
-
-		while (isPressureDataReady() == false) {
+		while (!isPressureDataReady()) {
 			HAL_Delay(100);
 			n++;
 			if (n > 10) {
-				debug_print("WSEN PADS: Pressure data not available.\r\n");
-				//return;
+				debug_print("<Error> WSEN PADS: Pressure data not available.\r\n");
 				break;
 			}
 		};
 
         if (HAL_OK != getPressure_float(&pressure)) {
-            debug_print("WSEN PADS: Read pressure data error.\r\n");
+            debug_print("<Error> WSEN PADS: Read pressure data error.\r\n");
         }
 
 		n = 0;
@@ -121,13 +138,12 @@ void Pressure_WSEN_PADS::singleConversionModeExample()
 			HAL_Delay(100);
 			n++;
 			if (n > 10) {
-				debug_print("WSEN PADS: temperature data not available.\r\n");
-				//return;
+				debug_print("<Error> WSEN PADS: temperature data not available.\r\n");
 				break;
 			}
 		};
         if (HAL_OK != getTemperature_float(&temperature)) {
-            debug_print("WSEN PADS: Read temperature data error.\r\n");
+            debug_print("<Error> WSEN PADS: Read temperature data error.\r\n");
         }
 
 		debug_print<float>("Pressure = %.3f kPa   Temperature = %.2f degC\r\n", pressure, temperature);
@@ -139,15 +155,6 @@ void Pressure_WSEN_PADS::Pressure_WSEN_PADS::continuousModeExampleLoop()
 	float pressure = 0;
 	float temperature = 0;
 	int n;
-	PADS_outputDataRate_t odr;
-
-	setOutputDataRate(PADS_outputDataRate1Hz);
-	getOutputDataRate(&odr);
-	if (odr != PADS_outputDataRate1Hz)
-		debug_print("WSEN PADS: Set output data rate error.\r\n");
-
-	// TODO: Enable Low-noise configuration
-	// TODO: Enable additional low pass filter
 
 	while (1) {
 		n = 0;
@@ -155,36 +162,28 @@ void Pressure_WSEN_PADS::Pressure_WSEN_PADS::continuousModeExampleLoop()
 			HAL_Delay(10);
 			n++;
 			if (n > 10) {
-				debug_print("WSEN PADS: Pressure data not available.\r\n");
-				//return;
+				debug_print("<Error> WSEN PADS: Pressure data not available.\r\n");
 				break;
 			}
 		};
-		if (HAL_OK != getPressure_float(&pressure)) {
-			debug_print("WSEN PADS: Read pressure data error.\r\n");
-		}
+        getPressure_float(&pressure);
 
 		n = 0;
 		while (!isTemperatureDataReady()) {
 			HAL_Delay(10);
 			n++;
 			if (n > 10) {
-				debug_print("WSEN PADS: temperature data not available.\r\n");
-				//return;
+				debug_print("<Error> WSEN PADS: temperature data not available.\r\n");
 				break;
 			}
 		};
-		if (HAL_OK != getTemperature_float(&temperature)) {
-			debug_print("WSEN PADS: Read temperature data error.\r\n");
-		}
+        getTemperature_float(&temperature);
 
 		debug_print<float>("Pressure = %.3f kPa   Temperature = %.2f degC\r\n", pressure, temperature);
 
 		HAL_Delay(1000);
 	}
 }
-
-
 
 HAL_StatusTypeDef Pressure_WSEN_PADS::softReset()
 {
@@ -395,13 +394,9 @@ HAL_StatusTypeDef Pressure_WSEN_PADS::isPressureDataReady(PADS_state_t *state)
 bool Pressure_WSEN_PADS::isPressureDataReady()
 {
     PADS_status_t statusReg;
-    PADS_state_t presReady;
 
     PADS_ReadReg(PADS_STATUS_REG, 1, (uint8_t *) &statusReg);
-    presReady = (PADS_state_t) statusReg.presDataAvailable;
-    return presReady == PADS_enable;
-    
-    //return (((PADS_state_t)statusReg.presDataAvailable) == PADS_enable);
+    return (((PADS_state_t) statusReg.presDataAvailable) == PADS_enable);
 }
 
 HAL_StatusTypeDef Pressure_WSEN_PADS::isTemperatureDataReady(PADS_state_t *state)
@@ -495,10 +490,8 @@ HAL_StatusTypeDef Pressure_WSEN_PADS::getTemperature_float(float *tempDegC)
     return status;
 }
 
-HAL_StatusTypeDef Pressure_WSEN_PADS::getDeviceID(uint8_t *device_ID)
-{
-    return PADS_ReadReg(PADS_DEVICE_ID_REG, 1, device_ID);
-}
+
+// ***** private funcitions *****
 
 float Pressure_WSEN_PADS::convertPressure_float(const int32_t& rawPres)
 {
@@ -511,12 +504,12 @@ float Pressure_WSEN_PADS::convertDifferentialPressure_float(const int32_t &rawPr
     return ((float) rawPres) * 0.00625f;
 }
 
-int32_t convertPressure_int(const int32_t &rawPres)
+int32_t Pressure_WSEN_PADS::convertPressure_int(const int32_t &rawPres)
 {
     return (rawPres * 100) / 4096;
 }
 
-int32_t convertDifferentialPressure_int(const int32_t &rawPres)
+int32_t Pressure_WSEN_PADS::convertDifferentialPressure_int(const int32_t &rawPres)
 {
     return (rawPres * 25600) / 4096;
 }

@@ -367,6 +367,12 @@ typedef struct
 
 typedef enum
 {
+	ISDS_I2C = 0,
+	ISDS_SPI = 1
+} ISDS_interface;
+
+typedef enum
+{
 	ISDS_disable = 0,
 	ISDS_enable = 1
 } ISDS_state_t;
@@ -428,8 +434,18 @@ class IMU_6DIM_WSEN_ISDS
 public:
     // Construtor
     IMU_6DIM_WSEN_ISDS(SPI_HandleTypeDef* _spi_handler, GPIO_TypeDef *_CS_PORT, uint16_t _CS_PIN);
+    IMU_6DIM_WSEN_ISDS(I2C_HandleTypeDef* _i2c_handler, uint8_t SAO);
 
-    // Setting
+    // Initilizes the settings
+    /** blockDataUpdate:    ISDS_enable / ISDS_disable
+     *  accOutputDataRate: 	ISDS_accOdrOff / ISDS_accOdr12Hz5 / ISDS_accOdr26Hz / ISDS_accOdr52Hz / ISDS_accOdr104Hz / ISDS_accOdr208Hz /
+	                        ISDS_accOdr416Hz / ISDS_accOdr833Hz / ISDS_accOdr1k66Hz / ISDS_accOdr3k33Hz / ISDS_accOdr6k66Hz / ISDS_accOdr1Hz6
+     *  gyroOutputDataRate: ISDS_gyroOdrOff / ISDS_gyroOdr12Hz5 / ISDS_gyroOdr26Hz / ISDS_gyroOdr52Hz / ISDS_gyroOdr104Hz / ISDS_gyroOdr208Hz /
+                            ISDS_gyroOdr416Hz / ISDS_gyroOdr833Hz / ISDS_gyroOdr1k66Hz / ISDS_gyroOdr3k33Hz / ISDS_gyroOdr6k66Hz
+     *  accFullScale:       ISDS_accFullScaleTwoG / ISDS_accFullScaleSixteenG / ISDS_accFullScaleFourG / ISDS_accFullScaleEightG
+     *  gyroFullScale:      ISDS_gyroFullScale125dps / ISDS_gyroFullScale250dps / ISDS_gyroFullScale500dps / ISDS_gyroFullScale1000dps /
+     *                      ISDS_gyroFullScale2000dps
+    */
     bool init(
     	    ISDS_state_t blockDataUpdate = ISDS_enable,
     	    ISDS_accOutputDataRate_t accOutputDataRate = ISDS_accOdr104Hz,
@@ -437,25 +453,34 @@ public:
     	    ISDS_accFullScale_t accFullScale = ISDS_accFullScaleFourG,
     	    ISDS_gyroFullScale_t gyroFullScale = ISDS_gyroFullScale500dps);
 
+    // Communication test
+    bool isCommunicationReady();
+    HAL_StatusTypeDef getDeviceID(uint8_t *device_ID);
+
     // Usage example
     void example_loop();
 
     // ISDS_CTRL_1_REG
     HAL_StatusTypeDef setAccFullScale(ISDS_accFullScale_t fullScale);
-    uint8_t getAccFullScale();          // TODO: error handler
+    HAL_StatusTypeDef getAccFullScale(ISDS_accFullScale_t *fullScale);
+    uint8_t getAccFullScale();
     HAL_StatusTypeDef setAccOutputDataRate(ISDS_accOutputDataRate_t odr);
-    uint8_t getAccOutputDataRate();     // TODO: error handler
+    HAL_StatusTypeDef getAccOutputDataRate(ISDS_accOutputDataRate_t *odr);
+    uint8_t getAccOutputDataRate();
 
     // ISDS_CTRL_2_REG
     HAL_StatusTypeDef setGyroFullScale(ISDS_gyroFullScale_t fullScale);
-    uint8_t getGyroFullScale();         // TODO: error handler
+    HAL_StatusTypeDef getGyroFullScale(ISDS_gyroFullScale_t *fullScale);
+    uint8_t getGyroFullScale();
     HAL_StatusTypeDef setGyroOutputDataRate(ISDS_gyroOutputDataRate_t odr);
-    uint8_t getGyroOutputDataRate();    // TODO: error handler
+    HAL_StatusTypeDef getGyroOutputDataRate(ISDS_gyroOutputDataRate_t *odr);
+    uint8_t getGyroOutputDataRate();
 
     // ISDS_CTRL_3_REG
     HAL_StatusTypeDef enableBlockDataUpdate();
     HAL_StatusTypeDef disableBlockDataUpdate();
     bool isBlockDataUpdateEnabled();    // TODO: error handler
+    // TODO: auto increment
 
     // ISDS_STATUS_REG
     bool isAccelerationDataReady();     // TODO: error handler
@@ -463,29 +488,41 @@ public:
     bool isTemperatureDataReady();
 
     // Accelerometer output
-    float getAccelerationX_float();  // TODO: error handler
+    HAL_StatusTypeDef getAccelerationX_float(float *xAcc);
+    HAL_StatusTypeDef getAccelerationY_float(float *yAcc);
+    HAL_StatusTypeDef getAccelerationZ_float(float *zAcc);
+    float getAccelerationX_float();
     float getAccelerationY_float();
     float getAccelerationZ_float();
 
     // Gyroscope output
-    float getAngularRateX_float();  // TODO: error handler
+    HAL_StatusTypeDef getAngularRateX_float(float *xRate);
+    HAL_StatusTypeDef getAngularRateY_float(float *yRate);
+    HAL_StatusTypeDef getAngularRateZ_float(float *zRate);
+    float getAngularRateX_float();
     float getAngularRateY_float();
     float getAngularRateZ_float();
 
     // Temperature sensor output
-    float getTemperature_float(); // TODO: error handler
+    HAL_StatusTypeDef getTemperature_float(float *temperature);
+    float getTemperature_float();
 
 private:
+    // Interface
+    ISDS_interface interface;
+
     // SPI Interface
     SPI_HandleTypeDef* spi_handler;
     GPIO_TypeDef* CS_PORT;
     uint16_t CS_PIN;
 
+    // I2C Interface
+    I2C_HandleTypeDef* i2c_handler;
+    uint8_t i2c_device_addr;
+    const uint16_t i2cMemAddSize = I2C_MEMADD_SIZE_8BIT;
+
     ISDS_accFullScale_t currentAccFullScale;
     ISDS_gyroFullScale_t currentGyroFullScale;
-
-    // Communication test
-    uint8_t getDeviceID();
 
     float convertAcceleration_float(int16_t acc, ISDS_accFullScale_t fullScale);
     float convertAngularRate_float(int16_t rate, ISDS_gyroFullScale_t fullScale);

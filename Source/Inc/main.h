@@ -73,6 +73,7 @@ void Error_Handler(void);
 /* USER CODE BEGIN Private defines */
 #define WSEN_PADS_SAO 1
 #define WSEN_ITDS_SAO 1
+#define WSEN_ISDS_SAO 1
 #define WSEN_ISDS_CS_PORT GPIOB
 #define WSEN_ISDS_CS_PIN GPIO_PIN_6
 /* USER CODE END Private defines */

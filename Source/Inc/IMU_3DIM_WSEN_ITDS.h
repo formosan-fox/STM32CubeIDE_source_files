@@ -284,9 +284,9 @@ typedef enum
 
 typedef enum
 {
-    ITDS_normalOrLowPower,
-    ITDS_highPerformance,
-    ITDS_singleConversion
+    ITDS_normalOrLowPower = 0,
+    ITDS_highPerformance = 1,
+    ITDS_singleConversion = 2
 } ITDS_operatingMode_t;
 
 typedef enum
@@ -297,10 +297,19 @@ typedef enum
 
 typedef enum
 {
-    ITDS_off = 0,
-    ITDS_positiveAxis = 1,
-    ITDS_negativeAxis = 2
-} ITDS_selfTestConfig_t;
+  ITDS_outputDataRate_2 = 0,    /**< ODR/2 (except for ODR = 1600 Hz, 400 Hz) */
+  ITDS_outputDataRate_4 = 1,    /**< ODR/4 (High pass / Low pass filter) */
+  ITDS_outputDataRate_10 = 2,   /**< ODR/10 (High pass / Low pass filter) */
+  ITDS_outputDataRate_20 = 3    /**< ODR/20 (High pass / Low pass filter) */
+} ITDS_bandwidth_t;
+
+typedef enum
+{
+  ITDS_twoG = 0,      /**< ±2g */
+  ITDS_fourG = 1,     /**< ±4g */
+  ITDS_eightG = 2,    /**< ±8g */
+  ITDS_sixteenG = 3   /**< ±16g */
+} ITDS_fullScale_t;
 
 
 
@@ -311,18 +320,25 @@ public:
     // Construtor
     IMU_3DIM_WSEN_ITDS(I2C_HandleTypeDef* _i2c_handler, uint8_t SAO);
 
+    // Setting
+    // TODO: description of available choises
+    bool init(
+        ITDS_operatingMode_t operatingMode = ITDS_highPerformance,
+        ITDS_powerMode_t powerMode = ITDS_normalMode,
+        ITDS_outputDataRate_t outputDataRate = ITDS_odr6,
+        ITDS_fullScale_t fullScale = ITDS_sixteenG,
+        ITDS_state_t blockDataUpdate = ITDS_enable
+    );
+
     // Communication test
     bool isCommunicationReady();
-
-    // Setting
-    bool init();
+    HAL_StatusTypeDef getDeviceID(uint8_t *device_ID);
 
     // Usage example
-    void singleConversionModeExample();		// TODO: bugs
-    void continuousModeExampleLoop();
+    void exampleLoop();       
 
-    HAL_StatusTypeDef softReset();
-    HAL_StatusTypeDef getSoftResetState(ITDS_state_t *swReset);
+    HAL_StatusTypeDef softReset();          // TODO
+    HAL_StatusTypeDef getSoftResetState(ITDS_state_t *swReset); // TODO
     
     HAL_StatusTypeDef enableAutoIncrement();
     HAL_StatusTypeDef disableAutoIncrement();
@@ -334,28 +350,32 @@ public:
     HAL_StatusTypeDef isBlockDataUpdateEnabled(ITDS_state_t *bdu);
     bool isBlockDataUpdateEnabled();
 
+    HAL_StatusTypeDef setOperatingMode(ITDS_operatingMode_t opMode);
+    HAL_StatusTypeDef getOperatingMode(ITDS_operatingMode_t *opMode);
+
+    HAL_StatusTypeDef setPowerMode(ITDS_powerMode_t powerMode);
+    HAL_StatusTypeDef getPowerMode(ITDS_powerMode_t *powerMode);
+
     HAL_StatusTypeDef setOutputDataRate(ITDS_outputDataRate_t odr);
     HAL_StatusTypeDef getOutputDataRate(ITDS_outputDataRate_t* odr);
 
-    HAL_StatusTypeDef PADS_setPowerMode(ITDS_powerMode_t mode);
-    HAL_StatusTypeDef PADS_getPowerMode(ITDS_powerMode_t *mode);
+    HAL_StatusTypeDef setFullScale(ITDS_fullScale_t fullScale);
+    HAL_StatusTypeDef getFullScale(ITDS_fullScale_t *fullScale);
 
     HAL_StatusTypeDef enableOneShot();
     HAL_StatusTypeDef disableOneShot();
     HAL_StatusTypeDef isOneShotEnabled(ITDS_state_t *oneShot);
     bool isOneShotEnabled();
 
-    // HAL_StatusTypeDef isPressureDataReady(ITDS_state_t *state);
-    // bool isPressureDataReady();
-    // HAL_StatusTypeDef isTemperatureDataReady(ITDS_state_t *state);
-    // bool isTemperatureDataReady();
+    HAL_StatusTypeDef isAccelerationDataReady(ITDS_state_t *state);
+    bool isAccelerationDataReady();
 
-    // HAL_StatusTypeDef getRawPressure(int32_t *rawPres);
-    // HAL_StatusTypeDef getRawTemperature(int16_t *rawTemp);
+    HAL_StatusTypeDef getAccelerationX(float *xAcc);
+    HAL_StatusTypeDef getAccelerationY(float *yAcc);
+    HAL_StatusTypeDef getAccelerationZ(float *zAcc);
 
-    // HAL_StatusTypeDef getPressure_float(float *presskPa);
-    // HAL_StatusTypeDef getDifferentialPressure_float(float *presskPa);
-    // HAL_StatusTypeDef getTemperature_float(float *tempDegC);
+    // TODO: temperature
+    // HAL_StatusTypeDef getTemperature_float(float *tempDegC); 
 
 private:
     // I2C Interface
@@ -363,13 +383,9 @@ private:
     uint8_t i2c_device_addr;
     const uint16_t i2cMemAddSize = I2C_MEMADD_SIZE_8BIT;
 
-    // Communication test
-    HAL_StatusTypeDef getDeviceID(uint8_t *device_ID);
+    ITDS_fullScale_t currentFullScale;
 
-    // float convertPressure_float(const int32_t &rawPres);
-    // float convertDifferentialPressure_float(const int32_t &rawPres);
-    // int32_t convertPressure_int(const int32_t &rawPres);
-    // int32_t convertDifferentialPressure_int(const int32_t &rawPres);
+    inline float convertAcceleration_float(const int16_t &acc);
 
     inline HAL_StatusTypeDef ITDS_ReadReg(uint16_t regAddr, uint16_t numBytesToRead, uint8_t *buf);
     inline HAL_StatusTypeDef ITDS_WriteReg(uint16_t regAddr, uint16_t numBytesToWrite, uint8_t *data);

@@ -25,6 +25,7 @@
 #include "Pressure_WSEN_PADS.h"
 #include "IMU_3DIM_WSEN_ITDS.h"
 #include "IMU_6DIM_WSEN_ISDS.h"
+
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -65,7 +66,11 @@ static void MX_SPI1_Init(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-
+typedef enum {
+	Pressure_WSEN_PADS_test = 0,
+	IMU_3DIM_WSEN_ITDS_test = 1,
+	IMU_6DIM_WSEN_ISDS_test = 2
+} SensorTestType;
 /* USER CODE END 0 */
 
 /**
@@ -75,9 +80,12 @@ static void MX_SPI1_Init(void);
 int main(void)
 {
   /* USER CODE BEGIN 1 */
+  SensorTestType testType = Pressure_WSEN_PADS_test;
+
   Pressure_WSEN_PADS altimeter_WE(&hi2c1, WSEN_PADS_SAO);
   IMU_3DIM_WSEN_ITDS accelerator_WE(&hi2c1, WSEN_ITDS_SAO);
   IMU_6DIM_WSEN_ISDS IMU_WE(&hspi1, WSEN_ISDS_CS_PORT, WSEN_ISDS_CS_PIN);
+  //IMU_6DIM_WSEN_ISDS IMU_WE(&hi2c1, WSEN_ISDS_SAO);
   bool init_status = false;
   /* USER CODE END 1 */
 
@@ -105,20 +113,32 @@ int main(void)
   /* USER CODE BEGIN 2 */
   debug_print("Test starts.\r\n");
 
-   // Initialize the IMU. Example input parameters:(ISDS_enable, ISDS_accOdr104Hz, ISDS_gyroOdr104Hz, ISDS_accFullScaleTwoG, ISDS_gyroFullScale2000dps)
-   init_status = IMU_WE.init();
-   if (init_status == false)
-       debug_print("WE 6-dim IMU initialization fails.\r\n");
+  //HAL_GPIO_WritePin(WSEN_ISDS_CS_PORT, WSEN_ISDS_CS_PIN, GPIO_PIN_SET);
 
-  // Initialize the Pressure sensor.
-  init_status = altimeter_WE.init();
-  if (init_status == false)
-      debug_print("WE altimeter initialization fails.\r\n");
-
-  // Initialize the 3-axis IMU.
-  init_status = accelerator_WE.init();
-  if (init_status == false)
-      debug_print("WE accelerator initialization fails.\r\n");
+   // Initialize the sensors. 
+  switch (testType)
+  {
+    case Pressure_WSEN_PADS_test: {
+        // Example input parameters:(ISDS_enable, ISDS_accOdr104Hz, ISDS_gyroOdr104Hz, ISDS_accFullScaleTwoG, ISDS_gyroFullScale2000dps)
+        init_status = altimeter_WE.init();
+        if (init_status == false)
+            debug_print("WE altimeter initialization fails.\r\n");
+        break;
+    }
+    case IMU_3DIM_WSEN_ITDS_test: {
+        init_status = accelerator_WE.init();
+        if (init_status == false)
+            debug_print("WE accelerator initialization fails.\r\n");
+        break;
+    }
+    case IMU_6DIM_WSEN_ISDS_test: {
+        init_status = IMU_WE.init();
+        if (init_status == false)
+            debug_print("WE 6-dim IMU initialization fails.\r\n");
+        break;
+    }
+    default: break;
+  }
 
 
   /* USER CODE END 2 */
@@ -127,8 +147,23 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-	  altimeter_WE.continuousModeExampleLoop();
-	  // IMU_WE.example_loop();
+    switch (testType)
+  {
+    case Pressure_WSEN_PADS_test: {
+        altimeter_WE.continuousModeExampleLoop();
+        break;
+    }
+    case IMU_3DIM_WSEN_ITDS_test: {
+        accelerator_WE.exampleLoop();
+    	break;
+    }
+    case IMU_6DIM_WSEN_ISDS_test: {
+        //IMU_WE.isCommunicationReady();
+        IMU_WE.example_loop();
+        break;
+    }
+    default: break;
+  }
 
     /* USER CODE END WHILE */
 

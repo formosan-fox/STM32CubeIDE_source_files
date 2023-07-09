@@ -189,15 +189,19 @@ public:
     // Construtor
     Pressure_WSEN_PADS(I2C_HandleTypeDef* _i2c_handler, uint8_t SAO);
 
+    // Setting
+    // TODO: description of available choises
+    bool init(
+        PADS_outputDataRate_t outputDataRate = PADS_outputDataRate10Hz,
+        PADS_state_t blockDataUpdate = PADS_enable);
+
     // Communication test
     bool isCommunicationReady();
-
-    // Setting
-    bool init();
+    HAL_StatusTypeDef getDeviceID(uint8_t *device_ID);
 
     // Usage example
-    void singleConversionModeExample();		// TODO: bugs
-    void continuousModeExampleLoop();
+    void singleConversionModeExample();		// %% This mode has bugs.   TODO: Fix the bugs.
+    void continuousModeExampleLoop();       // Use this mode to explore the usage of this sensor.
 
     HAL_StatusTypeDef softReset();
     HAL_StatusTypeDef getSoftResetState(PADS_state_t *swReset);
@@ -240,9 +244,6 @@ private:
     I2C_HandleTypeDef* i2c_handler;
     uint8_t i2c_device_addr;
     const uint16_t i2cMemAddSize = I2C_MEMADD_SIZE_8BIT;
-
-    // Communication test
-    HAL_StatusTypeDef getDeviceID(uint8_t *device_ID);
 
     float convertPressure_float(const int32_t &rawPres);
     float convertDifferentialPressure_float(const int32_t &rawPres);
