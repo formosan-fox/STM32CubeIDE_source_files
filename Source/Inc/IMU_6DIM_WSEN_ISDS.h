@@ -11,10 +11,7 @@
  * Author: Zhi-Kai Xu
  */
 
-#include "stdint.h"
-#include "stm32l4xx_hal.h"
-#include <stdbool.h>
-
+#include "platform.h"
 
 /* ISDS 2536030320001 DEVICE_ID */
 #define ISDS_DEVICE_ID_VALUE                  0x6A      /**< This is the expected answer when requesting the ISDS_DEVICE_ID_REG */

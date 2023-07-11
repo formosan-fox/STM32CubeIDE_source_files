@@ -1,7 +1,7 @@
 #ifndef __PRESSURE_WSEN_PADS_H__
 #define __PRESSURE_WSEN_PADS_H__
 
-/* Device name: ABSOLUTE PRESSURE SENSOR WSEN-PADS
+/* Device name: Absolute Pressure Sensor WSEN-PADS
  * Order code: 2511020213301
  * Datasheet: https://www.we-online.com/components/products/datasheet/2511020213301.pdf
  * User Manual: https://www.we-online.com/components/products/manual/2511020213301_WSEN-PADS%202511020213301%20Manual_rev2.2.pdf
@@ -11,11 +11,7 @@
  * Author: Zhi-Kai Xu
  */
 
-#include "stdint.h"
-#include "stm32l4xx_hal.h"
-#include <stdbool.h>
-
-
+#include "platform.h"
 
 /* PADS 2511020213301 DEVICE_ID */
 #define PADS_DEVICE_ID_VALUE        0xB3     /**< Device ID of PADS 2511020213301 Sensor */

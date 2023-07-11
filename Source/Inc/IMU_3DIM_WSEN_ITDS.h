@@ -11,9 +11,7 @@
  * Author: Zhi-Kai Xu
  */
 
-#include "stdint.h"
-#include "stm32l4xx_hal.h"
-#include <stdbool.h>
+#include "platform.h"
 
 /* ITDS 2533020201601 DEVICE_ID */
 
