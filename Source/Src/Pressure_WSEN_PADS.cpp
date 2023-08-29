@@ -1,5 +1,6 @@
 #include "Pressure_WSEN_PADS.h"
 #include "util.h"
+#include "math.h" // getting altitude 
 
 // TODO: map
 
@@ -15,12 +16,16 @@ Pressure_WSEN_PADS::Pressure_WSEN_PADS(I2C_HandleTypeDef* _i2c_handler, uint8_t 
 
 bool Pressure_WSEN_PADS::init(
     PADS_outputDataRate_t outputDataRate,
-    PADS_state_t blockDataUpdate)
+    PADS_state_t blockDataUpdate,
+	PADS_powerMode_t lowNoiseMode,
+    PADS_filterMode_t enLowPassFilter,
+    PADS_filterBandwidth_t lowPassFilterConfig)
 {
 	PADS_state_t swReset;
    	PADS_outputDataRate_t odr;
-
-
+    PADS_powerMode_t powerMode;
+    PADS_filterMode_t filterMode;
+    PADS_filterBandwidth_t filterBandwidth;
     // TODO: Initialize sensor interface.
 
 
@@ -53,6 +58,15 @@ bool Pressure_WSEN_PADS::init(
         debug_print("<Error> WSEN PADS: Failed to enable auto increment.\r\n");
     }
 
+	// TODO: Enable Low-noise configuration
+    PADS_setPowerMode(lowNoiseMode);
+	PADS_getPowerMode(&powerMode);
+	if (powerMode == lowNoiseMode) {
+		debug_print("WSEN PADS: Set output data\r\n");  // TODO: prine message
+    } else {
+        debug_print("<Error> WSEN PADS: Failed to set the output data rate.\r\n");
+    }
+
     // Enable block data update
     if (blockDataUpdate) {
         enableBlockDataUpdate();
@@ -63,15 +77,32 @@ bool Pressure_WSEN_PADS::init(
         }
     }
 
-    setOutputDataRate(outputDataRate);
-	getOutputDataRate(&odr);
-	if (odr == outputDataRate) {          
+	// TODO: Enable additional low pass filter
+    PADS_setLowPassFilter(enLowPassFilter);
+	PADS_getLowPassFilter(&filterMode);
+	if (filterMode == enLowPassFilter) {
 		debug_print("WSEN PADS: Set output data\r\n");  // TODO: prine message
     } else {
         debug_print("<Error> WSEN PADS: Failed to set the output data rate.\r\n");
     }
-	// TODO: Enable Low-noise configuration
-	// TODO: Enable additional low pass filter
+
+    // choose bandwidth
+    PADS_setFilterBandwidth(lowPassFilterConfig);
+	PADS_getFilterBandwidth(&filterBandwidth);
+	if (filterBandwidth ==  lowPassFilterConfig) {
+		debug_print("WSEN PADS: Set output data\r\n");  // TODO: prine message
+    } else {
+        debug_print("<Error> WSEN PADS: Failed to set the output data rate.\r\n");
+    }
+
+    setOutputDataRate(outputDataRate);
+	getOutputDataRate(&odr);
+	if (odr == outputDataRate) {
+		debug_print("WSEN PADS: Set output data\r\n");  // TODO: prine message
+    } else {
+        debug_print("<Error> WSEN PADS: Failed to set the output data rate.\r\n");
+    }
+
 
     return true;
 }
@@ -305,6 +336,55 @@ bool Pressure_WSEN_PADS::isBlockDataUpdateEnabled()
     return ((PADS_state_t) ctrl1.blockDataUpdate == PADS_enable);
 }
 
+HAL_StatusTypeDef Pressure_WSEN_PADS::enableLowNoise()
+{
+    PADS_ctrl2_t ctrl2;
+    HAL_StatusTypeDef status;
+
+    status = PADS_ReadReg(PADS_CTRL_2_REG, 1, (uint8_t *) &ctrl2);
+	if (status != HAL_OK) {
+		return status;
+	}
+    ctrl2.lowNoiseMode = PADS_lowNoise;
+    return PADS_WriteReg(PADS_CTRL_2_REG, 1, (uint8_t *) &ctrl2);
+}
+
+HAL_StatusTypeDef Pressure_WSEN_PADS::disableLowNoise()
+{
+    PADS_ctrl2_t ctrl2;
+    HAL_StatusTypeDef status;
+
+    status = PADS_ReadReg(PADS_CTRL_2_REG, 1, (uint8_t *) &ctrl2);
+	if (status != HAL_OK) {
+		return status;
+	}
+    ctrl2.lowNoiseMode = PADS_lowPower;
+    return PADS_WriteReg(PADS_CTRL_2_REG, 1, (uint8_t *) &ctrl2);
+}
+
+HAL_StatusTypeDef Pressure_WSEN_PADS::isLowNoiseEnabled(PADS_powerMode_t *LNE)
+{
+    PADS_ctrl2_t ctrl2;
+    HAL_StatusTypeDef status;
+
+    status = PADS_ReadReg(PADS_CTRL_2_REG, 1, (uint8_t *) &ctrl2);
+	if (status != HAL_OK) {
+		return status;
+	}
+    *LNE = (PADS_powerMode_t)  ctrl2.lowNoiseMode;
+    return status;
+}
+
+bool Pressure_WSEN_PADS::isLowNoiseEnabled()
+{
+    PADS_ctrl2_t ctrl2;
+
+    PADS_ReadReg(PADS_CTRL_2_REG, 1, (uint8_t *) &ctrl2);
+    return ((PADS_powerMode_t) ctrl2.lowNoiseMode == PADS_lowNoise);
+}
+
+
+
 HAL_StatusTypeDef Pressure_WSEN_PADS::setOutputDataRate(PADS_outputDataRate_t odr)
 {
 	PADS_ctrl1_t ctrl1;
@@ -328,6 +408,84 @@ HAL_StatusTypeDef Pressure_WSEN_PADS::getOutputDataRate(PADS_outputDataRate_t* o
 		return status;
 	}
 	*odr = (PADS_outputDataRate_t) ctrl1.outputDataRate;
+	return status;
+}
+
+HAL_StatusTypeDef Pressure_WSEN_PADS::PADS_setPowerMode(PADS_powerMode_t mode)
+{
+    PADS_ctrl2_t ctrl2;
+    HAL_StatusTypeDef status;
+
+    status = PADS_ReadReg(PADS_CTRL_2_REG, 1, (uint8_t *) &ctrl2);
+	if (status != HAL_OK) {
+		return status;
+	}
+	ctrl2.lowNoiseMode = mode;
+	return PADS_WriteReg(PADS_CTRL_2_REG, 1, (uint8_t *) &ctrl2);
+}
+
+HAL_StatusTypeDef Pressure_WSEN_PADS::PADS_getPowerMode(PADS_powerMode_t *mode)
+{
+    PADS_ctrl2_t ctrl2;
+    HAL_StatusTypeDef status;
+
+    status = PADS_ReadReg(PADS_CTRL_2_REG, 1, (uint8_t *) &ctrl2);
+	if (status != HAL_OK) {
+		return status;
+	}
+	*mode = ( PADS_powerMode_t) ctrl2.lowNoiseMode;
+	return status;
+}
+
+HAL_StatusTypeDef Pressure_WSEN_PADS::PADS_setLowPassFilter(PADS_filterMode_t lps )
+{
+    PADS_ctrl1_t ctrl1;
+    HAL_StatusTypeDef status;
+
+    status = PADS_ReadReg(PADS_CTRL_1_REG, 1, (uint8_t *) &ctrl1);
+	if (status != HAL_OK) {
+		return status;
+	}
+	ctrl1.enLowPassFilter = lps;
+	return PADS_WriteReg(PADS_CTRL_1_REG, 1, (uint8_t *) &ctrl1);
+}
+
+HAL_StatusTypeDef Pressure_WSEN_PADS::PADS_getLowPassFilter(PADS_filterMode_t *lps)
+{
+    PADS_ctrl1_t ctrl1;
+    HAL_StatusTypeDef status;
+
+    status = PADS_ReadReg(PADS_CTRL_1_REG, 1, (uint8_t *) &ctrl1);
+	if (status != HAL_OK) {
+		return status;
+	}
+	*lps = ( PADS_filterMode_t) ctrl1.enLowPassFilter;
+	return status;
+}
+
+HAL_StatusTypeDef Pressure_WSEN_PADS::PADS_setFilterBandwidth(PADS_filterBandwidth_t lpfp)
+{
+    PADS_ctrl1_t ctrl1;
+    HAL_StatusTypeDef status;
+
+    status = PADS_ReadReg(PADS_CTRL_1_REG, 1, (uint8_t *) &ctrl1);
+	if (status != HAL_OK) {
+		return status;
+	}
+	ctrl1.lowPassFilterConfig = lpfp;
+	return PADS_WriteReg(PADS_CTRL_1_REG, 1, (uint8_t *) &ctrl1);
+}
+
+HAL_StatusTypeDef Pressure_WSEN_PADS::PADS_getFilterBandwidth(PADS_filterBandwidth_t *lpfp)
+{
+    PADS_ctrl1_t ctrl1;
+    HAL_StatusTypeDef status;
+
+    status = PADS_ReadReg(PADS_CTRL_1_REG, 1, (uint8_t *) &ctrl1);
+	if (status != HAL_OK) {
+		return status;
+	}
+	*lpfp = (PADS_filterBandwidth_t) ctrl1.lowPassFilterConfig;
 	return status;
 }
 
@@ -460,6 +618,21 @@ HAL_StatusTypeDef Pressure_WSEN_PADS::getPressure_float(float *presskPa)
 		return status;
 	}
     *presskPa = convertPressure_float(rawPressure);
+    return status;
+}
+
+HAL_StatusTypeDef Pressure_WSEN_PADS::getAltitude_float(float *altitude)
+{
+    int32_t rawPressure = 0;
+    HAL_StatusTypeDef status;
+
+    status = getRawPressure(&rawPressure);
+    if (status != HAL_OK) {
+        return status;
+    }
+    //https://blog.csdn.net/distanters/article/details/107406767
+    *altitude = 44330 * (1 - pow((convertPressure_float(rawPressure) / 101.325) , 0.190284)) ;
+
     return status;
 }
 

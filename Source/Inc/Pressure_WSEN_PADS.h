@@ -178,6 +178,18 @@ typedef enum
     PADS_lowNoise = 1,      /**< Low noise mode */
 } PADS_powerMode_t;
 
+typedef enum
+{
+    PADS_disLowPassFiliter = 0,      /**< disable law pass filiter */
+    PADS_enLowPassFiliter = 1,      /**< enable law pass filiter */
+} PADS_filterMode_t;
+
+typedef enum
+{
+    PADS_wideBandwidth = 0,      /**<  law pass filiter with wideBandwidth*/
+    PADS_narowBandwidth = 1,      /**<  law pass filiter with narowBandwidth*/
+} PADS_filterBandwidth_t;
+
 /* Class definitions */
 class Pressure_WSEN_PADS
 {
@@ -188,8 +200,11 @@ public:
     // Setting
     // TODO: description of available choises
     bool init(
-        PADS_outputDataRate_t outputDataRate = PADS_outputDataRate10Hz,
-        PADS_state_t blockDataUpdate = PADS_enable);
+        PADS_outputDataRate_t outputDataRate = PADS_outputDataRate50Hz,
+        PADS_state_t blockDataUpdate = PADS_enable,
+        PADS_powerMode_t lowNoiseMode = PADS_lowPower,
+        PADS_filterMode_t enLowPassFilter = PADS_disLowPassFiliter,
+        PADS_filterBandwidth_t lowPassFilterConfig = PADS_wideBandwidth);
 
     // Communication test
     bool isCommunicationReady();
@@ -201,7 +216,7 @@ public:
 
     HAL_StatusTypeDef softReset();
     HAL_StatusTypeDef getSoftResetState(PADS_state_t *swReset);
-    
+
     HAL_StatusTypeDef enableAutoIncrement();
     HAL_StatusTypeDef disableAutoIncrement();
     HAL_StatusTypeDef isAutoIncrementEnabled(PADS_state_t *ai);
@@ -212,11 +227,22 @@ public:
     HAL_StatusTypeDef isBlockDataUpdateEnabled(PADS_state_t *bdu);
     bool isBlockDataUpdateEnabled();
 
+    HAL_StatusTypeDef enableLowNoise();
+    HAL_StatusTypeDef disableLowNoise();
+    HAL_StatusTypeDef isLowNoiseEnabled(PADS_powerMode_t *LNE);
+    bool isLowNoiseEnabled();
+
     HAL_StatusTypeDef setOutputDataRate(PADS_outputDataRate_t odr);
     HAL_StatusTypeDef getOutputDataRate(PADS_outputDataRate_t* odr);
 
     HAL_StatusTypeDef PADS_setPowerMode(PADS_powerMode_t mode);
     HAL_StatusTypeDef PADS_getPowerMode(PADS_powerMode_t *mode);
+
+    HAL_StatusTypeDef PADS_setLowPassFilter(PADS_filterMode_t lps);
+    HAL_StatusTypeDef PADS_getLowPassFilter(PADS_filterMode_t *lps);
+
+    HAL_StatusTypeDef PADS_setFilterBandwidth(PADS_filterBandwidth_t lpfp);
+    HAL_StatusTypeDef PADS_getFilterBandwidth(PADS_filterBandwidth_t *lpfp);
 
     HAL_StatusTypeDef enableOneShot();
     HAL_StatusTypeDef disableOneShot();
@@ -234,6 +260,7 @@ public:
     HAL_StatusTypeDef getPressure_float(float *presskPa);
     HAL_StatusTypeDef getDifferentialPressure_float(float *presskPa);
     HAL_StatusTypeDef getTemperature_float(float *tempDegC);
+    HAL_StatusTypeDef getAltitude_float(float *presskPa);
 
 private:
     // I2C Interface
