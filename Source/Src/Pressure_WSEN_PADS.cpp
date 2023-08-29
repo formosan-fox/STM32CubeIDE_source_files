@@ -1,6 +1,7 @@
 #include "Pressure_WSEN_PADS.h"
 #include "util.h"
-#include "math.h"
+#include "math.h" // getting altitude 
+
 // TODO: map
 
 static const uint32_t I2C_TIMEOUT = 100;
