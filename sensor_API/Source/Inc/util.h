@@ -2,7 +2,7 @@
 #define __UTIL_H__
 
 #include <stdio.h>
-#include "stm32l4xx_hal.h"
+#include "platform.h"
 
 
 // extern TIM_HandleTypeDef htim1;
